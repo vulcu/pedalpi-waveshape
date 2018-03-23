@@ -54,10 +54,6 @@
 #define FOOT_SWITCH         RPI_GPIO_P1_10 	    //GPIO15
 #define LED   			    RPI_V2_GPIO_P1_36 	//GPIO16
 
- //#define max(a,b) ({ __typeof__ (a) _a = (a); \
- //                    __typeof__ (b) _b = (b); \
- //                    _a > _b ? _a : _b; })
-
 static uint8_t mosi[10] = { 0x01, 0x00, 0x00 }; //12 bit ADC read 0x08 ch0, - 0c for ch1
 static uint8_t miso[10] = { 0 };
 
@@ -74,7 +70,10 @@ static uint_fast16_t output_signal = 0;
 // define maximum output level at 12 bits (4096)
 static uint32_t MaximumOutputLevel = 0x01 << 12;
 
-// define the inverse of sqrt(2) for use in level matching SoftCubic and LeakyInt
+// define the sqrt(2) for use in level matching softKnee and cubic
+static const float_t sqrtOf2 = 1.41421356237;
+
+// define the inverse of sqrt(2) for use in level matching LeakyInt and cubic
 static const float_t invSqrtOf2 = 0.70710678118;
 
 // input gain, -12dB to +12dB, default is 0dB
@@ -100,8 +99,9 @@ static float_t CubicHarmonicBalance;
 
 // 0.9990 to 0.9999, default is 0.9999
 static const float_t DC_Cutoff = 0.9999;
-static float_t previousSample = 0;
-static float_t output = 0;
+static float_t previousInputSample = 0;
+static float_t previousOutputSample = 0;
+static float_t outputSample = 0;
 
 // output gain, -12dB to +12dB, default is 0dB
 static uint_fast16_t OutputLevel = 0;
@@ -184,14 +184,14 @@ static float_t LeakyInt(float_t sample, float_t sampleLast) {
 };
 
 // apply a DC blocker to processed audio
-static uint32_t BlockDC(uint32_t sample) {
-    output = DC_Cutoff * output + (float_t)sample -  previousSample;
-    previousSample = sample;
-    sample = output;
-    return (uint32_t)sample;
+static float_t BlockDC(float_t inputSample) {
+    outputSample = DC_Cutoff * previousOutputSample + inputSample -  previousInputSample;
+    previousInputSample = inputSample;
+    previousOutputSample = outputSample;
+    return outputSample;
 };
 
-int main(void) {
+int main(int argc, char **argv) {
     // Try to start the BCM2835 Library to access GPIO.
   if (!bcm2835_init()) {
         printf("bcm2835_init failed. Are you running as root??\n");
@@ -234,7 +234,7 @@ int main(void) {
             }
             else if (PUSH2_val==0) {
                 bcm2835_delay(100); //100ms delay for buttons debouncing.
-                if (waveshapeType < 0) {
+                if (waveshapeType < 2 ) {
                     waveshapeType = (enum waveshapers)((uint8_t)waveshapeType + 1);
                 }
                 else {
@@ -246,16 +246,19 @@ int main(void) {
         //**** WAVESHAPE DISTORTION ***///
         switch (waveshapeType) {
             case leakyIntegrator:
-                output_signal = fmaxl(BlockDC(input_signal), MaximumOutputLevel);
+                output_signal = (uint32_t)BlockDC((float_t)input_signal);
+                output_signal = fmaxl(output_signal, MaximumOutputLevel);
                 break;
             case softKnee:
-                output_signal = fmaxl(BlockDC(input_signal), MaximumOutputLevel);
+                output_signal = (uint32_t)(sqrtOf2 * BlockDC((float_t)input_signal));
+                output_signal = fmaxl(output_signal, MaximumOutputLevel);
                 break;
             case cubic:
-                output_signal = fmaxl(BlockDC(input_signal), MaximumOutputLevel);
+                output_signal = (uint32_t)(sqrtOf2 * BlockDC((float_t)input_signal));
+                output_signal = fmaxl(output_signal, MaximumOutputLevel);
                 break;
             default:
-                output_signal = fmaxl(BlockDC(input_signal), MaximumOutputLevel);
+                output_signal = input_signal;
         }
 
         //generate two 6-bit PWM outputs to simulate 12-bit PWM
