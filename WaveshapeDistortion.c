@@ -54,17 +54,25 @@
 #define FOOT_SWITCH         RPI_GPIO_P1_10 	    //GPIO15
 #define LED   			    RPI_V2_GPIO_P1_36 	//GPIO16
 
+ //#define max(a,b) ({ __typeof__ (a) _a = (a); \
+ //                    __typeof__ (b) _b = (b); \
+ //                    _a > _b ? _a : _b; })
+
 static uint8_t mosi[10] = { 0x01, 0x00, 0x00 }; //12 bit ADC read 0x08 ch0, - 0c for ch1
 static uint8_t miso[10] = { 0 };
 
-static uint8_t FOOT_SWITCH_val;
-static uint8_t TOGGLE_SWITCH_val;
-static uint8_t PUSH1_val;
-static uint8_t PUSH2_val;
+static uint_fast8_t FOOT_SWITCH_val;
+static uint_fast8_t TOGGLE_SWITCH_val;
+static uint_fast8_t PUSH1_val;
+static uint_fast8_t PUSH2_val;
 
-static uint32_t read_timer=0;
-static uint32_t input_signal=0;
-static uint32_t output_signal=0;
+static uint_fast16_t read_timer = 0;
+
+static uint_fast16_t input_signal = 0;
+static uint_fast16_t output_signal = 0;
+
+// define maximum output level at 12 bits (4096)
+static uint32_t MaximumOutputLevel = 0x01 << 12;
 
 // define the inverse of sqrt(2) for use in level matching SoftCubic and LeakyInt
 static const float_t invSqrtOf2 = 0.70710678118;
@@ -92,11 +100,11 @@ static float_t CubicHarmonicBalance;
 
 // 0.9990 to 0.9999, default is 0.9999
 static const float_t DC_Cutoff = 0.9999;
-static float_t itm = 0;
-static float_t otm = 0;
+static float_t previousSample = 0;
+static float_t output = 0;
 
 // output gain, -12dB to +12dB, default is 0dB
-static float_t OutputLevel = 0;
+static uint_fast16_t OutputLevel = 0;
 
 static void configurePWM(void) {
     //define PWM output configuration
@@ -133,40 +141,40 @@ static void setupGPIO(void) {
 }
 
 // cube function
-static float cubef(float x) {
+static float_t cubef(float_t x) {
     return (x * x * x);
 }
 
 // hard clip of input signal
-static float HardClip(float sample, float thresh) {
+static float_t HardClip(float_t sample, float_t thresh) {
     return 0.5 * (fabsf(sample + thresh) - fabsf(sample - thresh));
 };
 
 // cubic soft clip function
-static float SoftCubicClip(float sample, float thresh) {
-    float threshInv = 1 / thresh;
+static float_t SoftCubicClip(float_t sample, float_t thresh) {
+    float_t threshInv = 1 / thresh;
     return threshInv * ((thresh * 1.5 * HardClip(sample, thresh)) -
         (0.5 * cubef(HardClip(sample, thresh)) * threshInv));
 };
 
 // use this to process audio via the SoftCubicClip algorithm
-static float SoftCubic(float sample) {
+static float_t SoftCubic(float_t sample) {
     return invSqrtOf2 * (SoftCubicClip(sample, CubicSoftClipThreshold) +
         (CubicHarmonicBalance * SoftCubicClip(fabsf(sample), CubicSoftClipThreshold)));
 };
 
 // soft clip function with adjustable knee
-static float SKClip(float sample, float knee) {
+static float_t SKClip(float_t sample, float_t knee) {
     return sample / (knee * fabsf(sample) + 1);
 };
 
 // use this to process audio via the SKClip algorithm
-static float SoftKnee(float sample) {
+static float_t SoftKnee(float_t sample) {
     SKClip(sample, SoftClipKnee) + ((SoftClipKnee / 2) * SKClip(fabsf(sample), SoftClipKnee));
 };
 
 // use this to process audio via the leaky integrator algorithm
-static float LeakyInt(float sample, float sampleLast) {
+static float_t LeakyInt(float_t sample, float_t sampleLast) {
     if (sample > sampleLast) {
         return invSqrtOf2 * ((1 - TcRise) * sample) + (TcRise * sampleLast);
         }
@@ -176,11 +184,11 @@ static float LeakyInt(float sample, float sampleLast) {
 };
 
 // apply a DC blocker to processed audio
-static float BlockDC(float sample) {
-    otm = DC_Cutoff * otm + sample - itm;
-    itm = sample;
-    sample = otm;
-    return sample;
+static uint32_t BlockDC(uint32_t sample) {
+    output = DC_Cutoff * output + (float_t)sample -  previousSample;
+    previousSample = sample;
+    sample = output;
+    return (uint32_t)sample;
 };
 
 int main(void) {
@@ -198,11 +206,11 @@ int main(void) {
 
     // Main Loop
     while(1) {
-        //read 12 bits ADC
+        // read 12 bits ADC
         bcm2835_spi_transfernb(mosi, miso, 3);
-        input_signal = miso[2] + ((miso[1] & 0x0F) << 8);
+        input_signal = (uint32_t)(((uint8_t)(miso[1] & 0x0F) << 8) + (uint8_t)miso[2]);
 
-        //Read the PUSH buttons every 15625 times (0.250s) to save resources.
+        // Read the PUSH buttons every 15625 times (0.250s) to save resources.
         read_timer++;
         if (read_timer==15625) {
             read_timer=0;
@@ -238,16 +246,16 @@ int main(void) {
         //**** WAVESHAPE DISTORTION ***///
         switch (waveshapeType) {
             case leakyIntegrator:
-                   output_signal = BlockDC(input_signal);
+                output_signal = fmaxl(BlockDC(input_signal), MaximumOutputLevel);
                 break;
             case softKnee:
-                   output_signal = input_signal;
+                output_signal = fmaxl(BlockDC(input_signal), MaximumOutputLevel);
                 break;
             case cubic:
-                   output_signal = input_signal;
+                output_signal = fmaxl(BlockDC(input_signal), MaximumOutputLevel);
                 break;
             default:
-                output_signal = input_signal;
+                output_signal = fmaxl(BlockDC(input_signal), MaximumOutputLevel);
         }
 
         //generate two 6-bit PWM outputs to simulate 12-bit PWM
