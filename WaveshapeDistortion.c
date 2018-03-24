@@ -62,25 +62,27 @@ static uint_fast8_t TOGGLE_SWITCH_val;
 static uint_fast8_t PUSH1_val;
 static uint_fast8_t PUSH2_val;
 
-static uint_fast16_t read_timer = 0;
-
-static uint_fast16_t input_signal = 0;
-static uint_fast16_t output_signal = 0;
+static uint_fast16_t input_sample = 0;
+static uint_fast16_t output_sample = 0;
+static uint_fast16_t previous_output_sample = 0;
 
 // define maximum output level at 12 bits (4096)
-static uint32_t MaximumOutputLevel = 0x01 << 12;
+static uint_fast16_t MaximumOutputLevel = 0x00FF;
 
-// define the sqrt(2) for use in level matching softKnee and cubic
+// keep track of cycles and only read user controls a few times per second
+static uint_fast16_t read_timer = 0;
+
+// define the sqrt(2) for use in level matching softKnee and softCubic
 static const float_t sqrtOf2 = 1.41421356237;
 
-// define the inverse of sqrt(2) for use in level matching LeakyInt and cubic
+// define the inverse of sqrt(2) for use in level matching LeakyInt and softCubic
 static const float_t invSqrtOf2 = 0.70710678118;
 
 // input gain, -12dB to +12dB, default is 0dB
-static float_t InputLevel = 0;
+//static uint16_t InputLevel = 0;
 
 // the type of waveshape distortion applied to the signal
-enum waveshapers{leakyIntegrator, softKnee, cubic} waveshapeType;
+static enum waveshapers{leakyIntegrator, softKnee, softCubic} waveshapeType;
 
 // rising and falling time constants for the leaky integrator
 // Rise: 0.0001 to 0.5000, default is 0.2300
@@ -98,13 +100,13 @@ static float_t CubicSoftClipThreshold = 1.0;
 static float_t CubicHarmonicBalance;
 
 // 0.9990 to 0.9999, default is 0.9999
-static const float_t DC_Cutoff = 0.9999;
-static float_t previousInputSample = 0;
-static float_t previousOutputSample = 0;
-static float_t outputSample = 0;
+//static const float_t DC_Cutoff = 0.9999;
+//static float_t previousInputSample = 0;
+//static float_t previousOutputSample = 0;
+//static float_t outputSample = 0;
 
 // output gain, -12dB to +12dB, default is 0dB
-static uint_fast16_t OutputLevel = 0;
+//static uint16_t OutputLevel = 0;
 
 static void configurePWM(void) {
     //define PWM output configuration
@@ -145,6 +147,16 @@ static float_t cubef(float_t x) {
     return (x * x * x);
 }
 
+// min function for uint16_t
+static uint16_t uintmin16(uint16_t a, uint16_t b) {
+    if (a < b) {
+        return a;
+    }
+    else {
+        return b;
+    }
+}
+
 // hard clip of input signal
 static float_t HardClip(float_t sample, float_t thresh) {
     return 0.5 * (fabsf(sample + thresh) - fabsf(sample - thresh));
@@ -174,22 +186,25 @@ static float_t SoftKnee(float_t sample) {
 };
 
 // use this to process audio via the leaky integrator algorithm
-static float_t LeakyInt(float_t sample, float_t sampleLast) {
+static float_t LeakyInt(uint_fast16_t sample, uint_fast16_t sampleLast) {
+    previous_output_sample = sample;
     if (sample > sampleLast) {
-        return invSqrtOf2 * ((1 - TcRise) * sample) + (TcRise * sampleLast);
-        }
+       return invSqrtOf2 * ((1 - TcRise) * (float_t)sample) + (TcRise * (float_t)sampleLast);
+    }
       else {
-       return invSqrtOf2 * ((1 - TcFall) * sample) + (TcFall * sampleLast);
-       }
+       return invSqrtOf2 * ((1 - TcFall) * (float_t)sample) + (TcFall * (float_t)sampleLast);
+    }
 };
 
 // apply a DC blocker to processed audio
+/*
 static float_t BlockDC(float_t inputSample) {
     outputSample = DC_Cutoff * previousOutputSample + inputSample -  previousInputSample;
     previousInputSample = inputSample;
     previousOutputSample = outputSample;
     return outputSample;
 };
+*/
 
 int main(int argc, char **argv) {
     // Try to start the BCM2835 Library to access GPIO.
@@ -213,7 +228,7 @@ int main(int argc, char **argv) {
     while(1) {
         // read 12 bits ADC
         bcm2835_spi_transfernb(mosi, miso, 3);
-        input_signal = (uint32_t)(((uint8_t)(miso[1] & 0x0F) << 8) + (uint8_t)miso[2]);
+        input_sample = (uint_fast16_t)(((uint_fast8_t)(miso[1] & 0x0F) << 8) + (uint_fast8_t)miso[2]);
 
         // Read the PUSH buttons every 15625 times (0.250s) to save resources.
         read_timer++;
@@ -252,24 +267,26 @@ int main(int argc, char **argv) {
         switch (waveshapeType) {
             case leakyIntegrator:
                 bcm2835_gpio_write(LED, 1);  // for verifying pushbuttons cycle through cases
-                output_signal = (uint32_t)BlockDC((float_t)input_signal);
-                output_signal = fmaxl(output_signal, MaximumOutputLevel);
+                //output_sample = (uint16_t)LeakyInt(input_sample, previous_output_sample);
+                output_sample = uintmin16(input_sample, MaximumOutputLevel);
                 break;
             case softKnee:
-                output_signal = (uint32_t)(sqrtOf2 * BlockDC((float_t)input_signal));
-                output_signal = fmaxl(output_signal, MaximumOutputLevel);
+                //output_sample = (uint16_t)(sqrtOf2 * SoftKnee((float_t)input_sample));
+                //output_sample = uintmin16(output_sample, MaximumOutputLevel);
+                output_sample = input_sample;
                 break;
-            case cubic:
-                output_signal = (uint32_t)(sqrtOf2 * BlockDC((float_t)input_signal));
-                output_signal = fmaxl(output_signal, MaximumOutputLevel);
+            case softCubic:
+                //output_sample = (uint16_t)(sqrtOf2 * SoftCubic((float_t)input_sample));
+                //output_sample = uintmin16(output_sample, MaximumOutputLevel);
+                output_sample = input_sample;
                 break;
             default:
-                output_signal = input_signal;
+                output_sample = input_sample;
         }
 
         //generate two 6-bit PWM outputs to simulate 12-bit PWM
-        bcm2835_pwm_set_data(1, output_signal & 0x3F);
-        bcm2835_pwm_set_data(0, output_signal >> 6);
+        bcm2835_pwm_set_data(1, output_sample & 0x3F);
+        bcm2835_pwm_set_data(0, output_sample >> 6);
     }
 
     //close all and exit (does this actually work?)
