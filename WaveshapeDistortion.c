@@ -108,7 +108,7 @@ static uint_fast16_t OutputLevel = 0;
 
 static void configurePWM(void) {
     //define PWM output configuration
-    bcm2835_gpio_fsel(18,BCM2835_GPIO_FSEL_ALT5 ); //PWM0 signal on GPIO18
+    bcm2835_gpio_fsel(18,BCM2835_GPIO_FSEL_ALT5 );              //PWM0 signal on GPIO18
     bcm2835_gpio_fsel(13,BCM2835_GPIO_FSEL_ALT0 );              //PWM1 signal on GPIO13
     bcm2835_pwm_set_clock(2); // Max clk frequency (19.2MHz/2 = 9.6MHz)
     bcm2835_pwm_set_mode(0,1 , 1); //channel 0, markspace mode, PWM enabled.
@@ -126,7 +126,7 @@ static void configureSPI(void) {
     bcm2835_spi_setChipSelectPolarity(BCM2835_SPI_CS0, LOW);    // the default
 }
 
-static void setupGPIO(void) {
+static void configureGPIO(void) {
     //Define GPIO pin configuration
     bcm2835_gpio_fsel(PUSH1, BCM2835_GPIO_FSEL_INPT); 			//PUSH1 button as input
     bcm2835_gpio_fsel(PUSH2, BCM2835_GPIO_FSEL_INPT); 			//PUSH2 button as input
@@ -203,6 +203,11 @@ int main(int argc, char **argv) {
         printf("bcm2835_spi_begin failed. Are you running as root??\n");
         return 1;
     }
+    
+    // Initialize the BCM2835 PWM, SPI, and GPIO configurations
+    configurePWM();
+    configureSPI();
+    configureGPIO();
 
     // Main Loop
     while(1) {
@@ -246,6 +251,7 @@ int main(int argc, char **argv) {
         //**** WAVESHAPE DISTORTION ***///
         switch (waveshapeType) {
             case leakyIntegrator:
+                bcm2835_gpio_write(LED, 1);  // for verifying pushbuttons cycle through cases
                 output_signal = (uint32_t)BlockDC((float_t)input_signal);
                 output_signal = fmaxl(output_signal, MaximumOutputLevel);
                 break;
