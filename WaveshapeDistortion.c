@@ -67,13 +67,13 @@ static uint_fast8_t PUSH2_val;
 // keep track of cycles and only read user controls a few times per second
 static uint_fast16_t read_timer = 0;
 
-// ADC bias offset, for adding/removing DC offset from incoming signal
-static uint_fast16_t biasOffsetADC = 0x07FF;
-
 // input (unprocessed) sample, output (processed) sample, and previous output sample
-static float_t input_sample = 0;
-static float_t output_sample = 0;
-static float_t previous_output_sample = 0;
+static float_t input_sample = 0.0;
+static float_t output_sample = 0.0;
+static float_t previous_output_sample = 0.0;
+
+// ADC bias offset, for adding/removing DC offset from incoming signal
+static const float_t biasOffsetADC = 2047.0;
 
 // define the sqrt(2) for use in level matching softKnee and softCubic
 static const float_t sqrtOf2 = 1.41421356237;
@@ -96,8 +96,8 @@ static float_t SoftClipKnee = 0.95;
 // threshold of cubic soft clipping, 0 to 1, default is 1
 static float_t CubicSoftClipThreshold = 1.0;
 
-// cubic soft clip harmonic balance, 0 to 1, default is 1
-static float_t CubicHarmonicBalance;
+// cubic soft clip harmonic balance, 0 to 1, default is 0.5
+static float_t CubicHarmonicBalance = 0.5;
 
 // cube function
 static float_t cubef(float_t x) {
@@ -199,7 +199,7 @@ int main(int argc, char **argv) {
     while(1) {
         // read 12 bits ADC
         bcm2835_spi_transfernb(mosi, miso, 3);
-        input_sample = (float_t)(((miso[1] & 0x0F) << 8) + miso[2] - biasOffsetADC);
+        input_sample = (float_t)(((miso[1] & 0x0F) << 8) + miso[2]) - biasOffsetADC;
 
         // Read the PUSH buttons every 15625 times (0.250s) to save resources.
         read_timer++;
@@ -242,21 +242,24 @@ int main(int argc, char **argv) {
         switch (waveshapeType) {
             case leakyIntegrator:
                 //bcm2835_gpio_write(LED, 1);  // for verifying pushbuttons cycle through cases
-                output_sample = LeakyInt(input_sample, previous_output_sample) + biasOffsetADC;
+                output_sample = LeakyInt(input_sample, previous_output_sample);
                 break;
             case softKnee:
-                output_sample = sqrtOf2 * SoftKnee(input_sample) + biasOffsetADC;
+                output_sample = sqrtOf2 * SoftKnee(input_sample);
                 break;
             case softCubic:
-                output_sample = sqrtOf2 * SoftCubic(input_sample) + biasOffsetADC;
+                output_sample = sqrtOf2 * SoftCubic(input_sample);
                 break;
             default:
                 output_sample = input_sample;
         }
 
+        // add previously removed DC bias back into signal
+        output_sample = output_sample + biasOffsetADC;
+
         //generate two 6-bit PWM outputs to simulate 12-bit PWM
-        bcm2835_pwm_set_data(1, (uint16_t)output_sample & 0x003F);
-        bcm2835_pwm_set_data(0, (uint16_t)output_sample >> 6);
+        bcm2835_pwm_set_data(1, ((uint16_t)output_sample) & 0x003F);
+        bcm2835_pwm_set_data(0, ((uint16_t)output_sample) >> 6);
     }
 
     //close all and exit (does this actually work?)
