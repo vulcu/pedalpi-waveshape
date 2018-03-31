@@ -54,7 +54,9 @@
 #define FOOT_SWITCH         RPI_GPIO_P1_10 	    //GPIO15
 #define LED   			    RPI_V2_GPIO_P1_36 	//GPIO16
 
-static uint8_t mosi[10] = { 0x01, 0x00, 0x00 }; //12 bit ADC read 0x08 ch0, - 0c for ch1
+
+// ADC read instruction, and 12 bit ADC value (0x08 ch0 - 0c for ch1)
+static uint8_t mosi[10] = { 0x01, 0x00, 0x00 };
 static uint8_t miso[10] = { 0 };
 
 static uint_fast8_t FOOT_SWITCH_val;
@@ -62,24 +64,22 @@ static uint_fast8_t TOGGLE_SWITCH_val;
 static uint_fast8_t PUSH1_val;
 static uint_fast8_t PUSH2_val;
 
-static uint_fast16_t input_sample = 0;
-static uint_fast16_t output_sample = 0;
-static uint_fast16_t previous_output_sample = 0;
-
-// define maximum output level at 12 bits (4096)
-static uint_fast16_t MaximumOutputLevel = 0x00FF;
-
 // keep track of cycles and only read user controls a few times per second
 static uint_fast16_t read_timer = 0;
+
+// ADC bias offset, for adding/removing DC offset from incoming signal
+static uint_fast16_t biasOffsetADC = 0x07FF;
+
+// input (unprocessed) sample, output (processed) sample, and previous output sample
+static float_t input_sample = 0;
+static float_t output_sample = 0;
+static float_t previous_output_sample = 0;
 
 // define the sqrt(2) for use in level matching softKnee and softCubic
 static const float_t sqrtOf2 = 1.41421356237;
 
 // define the inverse of sqrt(2) for use in level matching LeakyInt and softCubic
 static const float_t invSqrtOf2 = 0.70710678118;
-
-// input gain, -12dB to +12dB, default is 0dB
-//static uint16_t InputLevel = 0;
 
 // the type of waveshape distortion applied to the signal
 static enum waveshapers{leakyIntegrator, softKnee, softCubic} waveshapeType;
@@ -99,14 +99,49 @@ static float_t CubicSoftClipThreshold = 1.0;
 // cubic soft clip harmonic balance, 0 to 1, default is 1
 static float_t CubicHarmonicBalance;
 
-// 0.9990 to 0.9999, default is 0.9999
-//static const float_t DC_Cutoff = 0.9999;
-//static float_t previousInputSample = 0;
-//static float_t previousOutputSample = 0;
-//static float_t outputSample = 0;
+// cube function
+static float_t cubef(float_t x) {
+    return (x * x * x);
+}
 
-// output gain, -12dB to +12dB, default is 0dB
-//static uint16_t OutputLevel = 0;
+// hard clip of input signal
+static float_t HardClip(float_t sample, float_t thresh) {
+    return 0.5 * (fabsf(sample + thresh) - fabsf(sample - thresh));
+};
+
+// cubic soft clip function
+static float_t SoftCubicClip(float_t sample, float_t thresh) {
+    float_t threshInv = 1 / thresh;
+    return threshInv * ((thresh * 1.5 * HardClip(sample, thresh)) -
+        (0.5 * cubef(HardClip(sample, thresh)) * threshInv));
+};
+
+// use this to process audio via the SoftCubicClip algorithm
+static float_t SoftCubic(float_t sample) {
+    return invSqrtOf2 * (SoftCubicClip(sample, CubicSoftClipThreshold) +
+        (CubicHarmonicBalance * SoftCubicClip(fabsf(sample), CubicSoftClipThreshold)));
+};
+
+// soft clip function with adjustable knee
+static float_t SKClip(float_t sample, float_t knee) {
+    return sample / (knee * fabsf(sample) + 1);
+};
+
+// use this to process audio via the SKClip algorithm
+static float_t SoftKnee(float_t sample) {
+    return SKClip(sample, SoftClipKnee) + ((SoftClipKnee / 2) * SKClip(fabsf(sample), SoftClipKnee));
+};
+
+// use this to process audio via the leaky integrator algorithm
+static float_t LeakyInt(float_t sample, float_t sampleLast) {
+    previous_output_sample = sample;
+    if (sample > sampleLast) {
+       return invSqrtOf2 * ((1 - TcRise) * sample) + (TcRise * sampleLast);
+    }
+      else {
+       return invSqrtOf2 * ((1 - TcFall) * sample) + (TcFall * sampleLast);
+    }
+};
 
 static void configurePWM(void) {
     //define PWM output configuration
@@ -142,70 +177,6 @@ static void configureGPIO(void) {
     bcm2835_gpio_set_pud(FOOT_SWITCH, BCM2835_GPIO_PUD_UP);     //FOOT_SWITCH pull-up enabled
 }
 
-// cube function
-static float_t cubef(float_t x) {
-    return (x * x * x);
-}
-
-// min function for uint16_t
-static uint16_t uintmin16(uint16_t a, uint16_t b) {
-    if (a < b) {
-        return a;
-    }
-    else {
-        return b;
-    }
-}
-
-// hard clip of input signal
-static float_t HardClip(float_t sample, float_t thresh) {
-    return 0.5 * (fabsf(sample + thresh) - fabsf(sample - thresh));
-};
-
-// cubic soft clip function
-static float_t SoftCubicClip(float_t sample, float_t thresh) {
-    float_t threshInv = 1 / thresh;
-    return threshInv * ((thresh * 1.5 * HardClip(sample, thresh)) -
-        (0.5 * cubef(HardClip(sample, thresh)) * threshInv));
-};
-
-// use this to process audio via the SoftCubicClip algorithm
-static float_t SoftCubic(float_t sample) {
-    return invSqrtOf2 * (SoftCubicClip(sample, CubicSoftClipThreshold) +
-        (CubicHarmonicBalance * SoftCubicClip(fabsf(sample), CubicSoftClipThreshold)));
-};
-
-// soft clip function with adjustable knee
-static float_t SKClip(float_t sample, float_t knee) {
-    return sample / (knee * fabsf(sample) + 1);
-};
-
-// use this to process audio via the SKClip algorithm
-static float_t SoftKnee(float_t sample) {
-    SKClip(sample, SoftClipKnee) + ((SoftClipKnee / 2) * SKClip(fabsf(sample), SoftClipKnee));
-};
-
-// use this to process audio via the leaky integrator algorithm
-static float_t LeakyInt(uint_fast16_t sample, uint_fast16_t sampleLast) {
-    previous_output_sample = sample;
-    if (sample > sampleLast) {
-       return invSqrtOf2 * ((1 - TcRise) * (float_t)sample) + (TcRise * (float_t)sampleLast);
-    }
-      else {
-       return invSqrtOf2 * ((1 - TcFall) * (float_t)sample) + (TcFall * (float_t)sampleLast);
-    }
-};
-
-// apply a DC blocker to processed audio
-/*
-static float_t BlockDC(float_t inputSample) {
-    outputSample = DC_Cutoff * previousOutputSample + inputSample -  previousInputSample;
-    previousInputSample = inputSample;
-    previousOutputSample = outputSample;
-    return outputSample;
-};
-*/
-
 int main(int argc, char **argv) {
     // Try to start the BCM2835 Library to access GPIO.
   if (!bcm2835_init()) {
@@ -228,7 +199,7 @@ int main(int argc, char **argv) {
     while(1) {
         // read 12 bits ADC
         bcm2835_spi_transfernb(mosi, miso, 3);
-        input_sample = (uint_fast16_t)(((uint_fast8_t)(miso[1] & 0x0F) << 8) + (uint_fast8_t)miso[2]);
+        input_sample = (float_t)(((miso[1] & 0x0F) << 8) + miso[2] - biasOffsetADC);
 
         // Read the PUSH buttons every 15625 times (0.250s) to save resources.
         read_timer++;
@@ -242,51 +213,50 @@ int main(int argc, char **argv) {
             //light the effect when the footswitch is activated.
             bcm2835_gpio_write(LED,!FOOT_SWITCH_val);
 
-            //update booster_value when the PUSH1 or 2 buttons are pushed.
-            if (PUSH1_val==0) {
-                bcm2835_delay(100); //100ms delay for buttons debouncing
-                if (waveshapeType > 0) {
-                    waveshapeType = (enum waveshapers)((uint8_t)waveshapeType - 1);
+            //update booster_value when the PUSH1 or 2 buttons are pushed and toggle switch is up
+            if (TOGGLE_SWITCH_val == 0)
+                if (PUSH1_val == 0) {
+                    bcm2835_delay(100); //100ms delay for buttons debouncing
+                    if (waveshapeType > 0) {
+                        waveshapeType = (enum waveshapers)((uint8_t)waveshapeType - 1);
+                    }
+                    else {
+                        waveshapeType = (enum waveshapers) 2;
+                    }
                 }
-                else {
-                    waveshapeType = (enum waveshapers) 2;
+                else if (PUSH2_val == 0) {
+                    bcm2835_delay(100); //100ms delay for buttons debouncing.
+                    if (waveshapeType < 2 ) {
+                        waveshapeType = (enum waveshapers)((uint8_t)waveshapeType + 1);
+                    }
+                    else {
+                        waveshapeType = (enum waveshapers) 0;
+                    }
                 }
-            }
-            else if (PUSH2_val==0) {
-                bcm2835_delay(100); //100ms delay for buttons debouncing.
-                if (waveshapeType < 2 ) {
-                    waveshapeType = (enum waveshapers)((uint8_t)waveshapeType + 1);
-                }
-                else {
-                    waveshapeType = (enum waveshapers) 0;
-                }
+            else {
+                // change waveshape parameter instead if toggle switch is down
             }
         }
 
         //**** WAVESHAPE DISTORTION ***///
         switch (waveshapeType) {
             case leakyIntegrator:
-                bcm2835_gpio_write(LED, 1);  // for verifying pushbuttons cycle through cases
-                //output_sample = (uint16_t)LeakyInt(input_sample, previous_output_sample);
-                output_sample = uintmin16(input_sample, MaximumOutputLevel);
+                //bcm2835_gpio_write(LED, 1);  // for verifying pushbuttons cycle through cases
+                output_sample = LeakyInt(input_sample, previous_output_sample) + biasOffsetADC;
                 break;
             case softKnee:
-                //output_sample = (uint16_t)(sqrtOf2 * SoftKnee((float_t)input_sample));
-                //output_sample = uintmin16(output_sample, MaximumOutputLevel);
-                output_sample = input_sample;
+                output_sample = sqrtOf2 * SoftKnee(input_sample) + biasOffsetADC;
                 break;
             case softCubic:
-                //output_sample = (uint16_t)(sqrtOf2 * SoftCubic((float_t)input_sample));
-                //output_sample = uintmin16(output_sample, MaximumOutputLevel);
-                output_sample = input_sample;
+                output_sample = sqrtOf2 * SoftCubic(input_sample) + biasOffsetADC;
                 break;
             default:
                 output_sample = input_sample;
         }
 
         //generate two 6-bit PWM outputs to simulate 12-bit PWM
-        bcm2835_pwm_set_data(1, output_sample & 0x3F);
-        bcm2835_pwm_set_data(0, output_sample >> 6);
+        bcm2835_pwm_set_data(1, (uint16_t)output_sample & 0x003F);
+        bcm2835_pwm_set_data(0, (uint16_t)output_sample >> 6);
     }
 
     //close all and exit (does this actually work?)
