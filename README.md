@@ -6,3 +6,5 @@ compile with:
   
 then run:  
 "sudo ./WaveshapeDistortion"
+  
+it needs a lot of work...
