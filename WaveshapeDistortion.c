@@ -13,7 +13,7 @@
 // YOU RELINQUISH YOUR CLAIM TO SUE IT'S AUTHOR, AS WELL AS THE CLAIM TO
 // ENTRUST SOMEBODY ELSE WITH DOING SO.
 //
-// Released under GPL:
+// Released under GPL-3.0:
 // <http://www.gnu.org/licenses/>.
 //
 // ************************************************************************
