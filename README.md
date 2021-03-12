@@ -1,4 +1,4 @@
-# pedalpi-waveshape - Audio Distortion for the [Pedal Pi](https://www.electrosmash.com/pedal-pi) #
+# PedalPi-WaveShape - Audio Distortion for the [Pedal Pi](https://www.electrosmash.com/pedal-pi) #
 A waveshaping audio distortion written in C for the [Electrosmash Pedal Pi](https://www.electrosmash.com/pedal-pi), and using the Broadcom BCM2835.
 
 ## Table of Contents ##
