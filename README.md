@@ -23,7 +23,7 @@ If bugs count as features, then this has a _lot_ of features. The last time it w
 * Get this to run on every boot so that you don't have to `ssh` into the Pi on every boot and start it
 * Add oversampling + filtering to reduce aliasing artifacts
 
-#### Status: This project is presently inactive but future development is planned ####
+#### Status: This project is in active development ####
 
 ## Installation ##
 Download the repo onto a Raspberry Pi/Pedal Pi and compile it with:  
