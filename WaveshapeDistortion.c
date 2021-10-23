@@ -54,6 +54,7 @@
 #define FOOT_SWITCH         RPI_GPIO_P1_10 	    //GPIO15
 #define LED   			    RPI_V2_GPIO_P1_36 	//GPIO16
 
+#define DEBOUNCE_TIMER_DELAY_CYCLES 31250
 
 // ADC read instruction, and 12 bit ADC value (0x08 ch0 - 0c for ch1)
 static uint8_t mosi[10] = { 0x01, 0x00, 0x00 };
@@ -66,6 +67,9 @@ static uint_fast8_t switch_push_right;
 
 // keep track of cycles and only read user controls a few times per second
 static uint_fast16_t read_timer = 0;
+
+// keep track of cycles and wait after a pushbutton event to help with debounce
+static uint_fast16_t debounce_timer = 0;
 
 // input (unprocessed) sample, output (processed) sample, and previous output sample
 static float_t input_sample = 0.0;
@@ -201,9 +205,9 @@ int main(int argc, char **argv) {
         bcm2835_spi_transfernb(mosi, miso, 3);
         input_sample = (float_t)(((miso[1] & 0x0F) << 8) + miso[2]) - biasOffsetADC;
 
-        // Read the PUSH buttons every 15625 times (0.250s) to save resources.
+        // Read the PUSH buttons every 1563 times (0.025s) to save resources.
         read_timer++;
-        if (read_timer==15625) {
+        if ((read_timer >= 1563) & (debounce_timer == 0)) {
             read_timer=0;
             switch_push_left = bcm2835_gpio_lev(PUSH1);
             switch_push_right = bcm2835_gpio_lev(PUSH2);
@@ -216,7 +220,8 @@ int main(int argc, char **argv) {
             //update booster_value when the PUSH1 or 2 buttons are pushed and toggle switch is up
             if (switch_toggle_0 == 0)
                 if (switch_push_left == 0) {
-                    bcm2835_delay(100); //100ms delay for buttons debouncing
+                    //reset delay for button debouncing
+                    debounce_timer = DEBOUNCE_TIMER_DELAY_CYCLES;
                     if (waveshapeType > 0) {
                         waveshapeType = (enum waveshapers)((uint8_t)waveshapeType - 1);
                     }
@@ -225,7 +230,8 @@ int main(int argc, char **argv) {
                     }
                 }
                 else if (switch_push_right == 0) {
-                    bcm2835_delay(100); //100ms delay for buttons debouncing.
+                    //100ms delay for button debouncing
+                    debounce_timer = DEBOUNCE_TIMER_DELAY_CYCLES;
                     if (waveshapeType < 2 ) {
                         waveshapeType = (enum waveshapers)((uint8_t)waveshapeType + 1);
                     }
@@ -236,6 +242,9 @@ int main(int argc, char **argv) {
             else {
                 // change waveshape parameter instead if toggle switch is down
             }
+        }
+        else if (debounce_timer > 0) {
+            debounce_timer -= 1;
         }
 
         //**** WAVESHAPE DISTORTION ***///
