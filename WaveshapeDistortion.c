@@ -59,10 +59,10 @@
 static uint8_t mosi[10] = { 0x01, 0x00, 0x00 };
 static uint8_t miso[10] = { 0 };
 
-static uint_fast8_t FOOT_SWITCH_val;
-static uint_fast8_t TOGGLE_SWITCH_val;
-static uint_fast8_t PUSH1_val;
-static uint_fast8_t PUSH2_val;
+static uint_fast8_t switch_push_foot;
+static uint_fast8_t switch_toggle_0;
+static uint_fast8_t switch_push_left;
+static uint_fast8_t switch_push_right;
 
 // keep track of cycles and only read user controls a few times per second
 static uint_fast16_t read_timer = 0;
@@ -76,10 +76,10 @@ static float_t previous_output_sample = 0.0;
 static const float_t biasOffsetADC = 2047.0;
 
 // define the sqrt(2) for use in level matching softKnee and softCubic
-static const float_t sqrtOf2 = 1.41421356237;
+static const float_t sqrt2 = 1.41421356237;
 
 // define the inverse of sqrt(2) for use in level matching LeakyInt and softCubic
-static const float_t invSqrtOf2 = 0.70710678118;
+static const float_t invsqrt2 = 0.70710678118;
 
 // the type of waveshape distortion applied to the signal
 static enum waveshapers{leakyIntegrator, softKnee, softCubic} waveshapeType;
@@ -118,7 +118,7 @@ static float_t SoftCubicClip(float_t sample, float_t thresh) {
 
 // use this to process audio via the SoftCubicClip algorithm
 static float_t SoftCubic(float_t sample) {
-    return invSqrtOf2 * (SoftCubicClip(sample, CubicSoftClipThreshold) +
+    return invsqrt2 * (SoftCubicClip(sample, CubicSoftClipThreshold) +
         (CubicHarmonicBalance * SoftCubicClip(fabsf(sample), CubicSoftClipThreshold)));
 };
 
@@ -136,10 +136,10 @@ static float_t SoftKnee(float_t sample) {
 static float_t LeakyInt(float_t sample, float_t sampleLast) {
     previous_output_sample = sample;
     if (sample > sampleLast) {
-       return invSqrtOf2 * ((1 - TcRise) * sample) + (TcRise * sampleLast);
+       return invsqrt2 * ((1 - TcRise) * sample) + (TcRise * sampleLast);
     }
       else {
-       return invSqrtOf2 * ((1 - TcFall) * sample) + (TcFall * sampleLast);
+       return invsqrt2 * ((1 - TcFall) * sample) + (TcFall * sampleLast);
     }
 };
 
@@ -205,17 +205,17 @@ int main(int argc, char **argv) {
         read_timer++;
         if (read_timer==15625) {
             read_timer=0;
-            PUSH1_val = bcm2835_gpio_lev(PUSH1);
-            PUSH2_val = bcm2835_gpio_lev(PUSH2);
-            TOGGLE_SWITCH_val = bcm2835_gpio_lev(TOGGLE_SWITCH);
-            FOOT_SWITCH_val = bcm2835_gpio_lev(FOOT_SWITCH);
+            switch_push_left = bcm2835_gpio_lev(PUSH1);
+            switch_push_right = bcm2835_gpio_lev(PUSH2);
+            switch_toggle_0 = bcm2835_gpio_lev(TOGGLE_SWITCH);
+            switch_push_foot = bcm2835_gpio_lev(FOOT_SWITCH);
 
             //light the effect when the footswitch is activated.
-            bcm2835_gpio_write(LED,!FOOT_SWITCH_val);
+            bcm2835_gpio_write(LED,!switch_push_foot);
 
             //update booster_value when the PUSH1 or 2 buttons are pushed and toggle switch is up
-            if (TOGGLE_SWITCH_val == 0)
-                if (PUSH1_val == 0) {
+            if (switch_toggle_0 == 0)
+                if (switch_push_left == 0) {
                     bcm2835_delay(100); //100ms delay for buttons debouncing
                     if (waveshapeType > 0) {
                         waveshapeType = (enum waveshapers)((uint8_t)waveshapeType - 1);
@@ -224,7 +224,7 @@ int main(int argc, char **argv) {
                         waveshapeType = (enum waveshapers) 2;
                     }
                 }
-                else if (PUSH2_val == 0) {
+                else if (switch_push_right == 0) {
                     bcm2835_delay(100); //100ms delay for buttons debouncing.
                     if (waveshapeType < 2 ) {
                         waveshapeType = (enum waveshapers)((uint8_t)waveshapeType + 1);
@@ -245,10 +245,12 @@ int main(int argc, char **argv) {
                 output_sample = LeakyInt(input_sample, previous_output_sample);
                 break;
             case softKnee:
-                output_sample = sqrtOf2 * SoftKnee(input_sample);
+                output_sample = LeakyInt(input_sample, previous_output_sample) * 2;
+                //output_sample =  SoftKnee(input_sample) * sqrt2;
                 break;
             case softCubic:
-                output_sample = sqrtOf2 * SoftCubic(input_sample);
+                output_sample = LeakyInt(input_sample, previous_output_sample) * 0.5;
+                //output_sample = SoftCubic(input_sample) * sqrt2;
                 break;
             default:
                 output_sample = input_sample;

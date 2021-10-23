@@ -19,6 +19,9 @@ If bugs count as features, then this has a _lot_ of features. The last time it w
 #### To Do ####
 * Get the basic UI functioning
 * Get audio passing **with** the waveshape processing applied
+  * ~~leaky integrator~~
+  * soft-knee
+  * cubic
 * Experiment with adding a `Wet/Dry` control
 * Get this to run on every boot so that you don't have to `ssh` into the Pi on every boot and start it
 * Add oversampling + filtering to reduce aliasing artifacts
@@ -26,7 +29,17 @@ If bugs count as features, then this has a _lot_ of features. The last time it w
 #### Status: This project is in active development ####
 
 ## Installation ##
-Download the repo onto a Raspberry Pi/Pedal Pi and compile it with:  
+Download the BCM2835 library onto a Pedal Pi and install it:
+```shell
+wget http://www.airspayce.com/mikem/bcm2835/bcm2835-1.70.tar.gz;
+tar xvfz bcm2835-1.50.tar.gz;
+cd bcm2835-1.50;
+./configure;
+make;
+sudo make install
+```
+
+Next, download this repo onto a Pedal Pi and compile it with:  
 `gcc -o WaveshapeDistortion -l rt WaveshapeDistortion.c -l bcm2835 -lm`
   
 then run:  
