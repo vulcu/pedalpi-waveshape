@@ -1,4 +1,4 @@
-<REAPER_PROJECT 0.1 "6.37/win64" 1635016896
+<REAPER_PROJECT 0.1 "6.37/win64" 1635031869
   RIPPLE 0
   GROUPOVERRIDE 0 0 0
   AUTOXFADE 1
@@ -14,8 +14,8 @@
   TIMEMODE 1 5 -1 30 0 0 -1
   VIDEO_CONFIG 0 0 256
   PANMODE 3
-  CURSOR 0
-  ZOOM 35.85960413809064 0 0
+  CURSOR 508
+  ZOOM 3.27605841196314 1226 0
   VZOOMEX 6 0
   USE_REC_CFG 0
   RECMODE 1
@@ -66,7 +66,7 @@
   MASTER_NCH 2 2
   MASTER_VOLUME 1 0 -1 -1 1
   MASTER_FX 1
-  MASTER_SEL 1
+  MASTER_SEL 0
   <MASTERFXLIST
     WNDRECT 24 82 655 408
     SHOW 0
@@ -104,10 +104,10 @@
     BUSCOMP 0 0 0 11 17
     SHOWINMIX 1 0.6667 0.5 1 0.5 0 -1 0
     FREEMODE 0
-    SEL 0
+    SEL 1
     REC 0 -1 0 0 0 0 0
     VU 2
-    TRACKHEIGHT 52 0 0 0 0 0
+    TRACKHEIGHT 182 0 0 0 0 0
     INQ 0 0 0 0.5 100 0 0 100
     NCHAN 2
     FX 1
@@ -127,6 +127,28 @@
       FLOATPOS 0 0 0 0
       FXID {8BF82C05-1B84-4B52-8AC4-AB823AA0FE16}
       WAK 0 0
+    >
+    <ITEM
+      POSITION 432
+      SNAPOFFS 0
+      LENGTH 159.833625
+      LOOP 1
+      ALLTAKES 0
+      FADEIN 1 0.01 0 1 0 0 0
+      FADEOUT 1 0.01 0 1 0 0 0
+      MUTE 0 0
+      SEL 0
+      IGUID {A841B754-50D5-4F23-920C-E5F6DE6BE9FD}
+      IID 4
+      NAME 02-190819_2141.wav
+      VOLPAN 1 0 7.549638 -1
+      SOFFS 0
+      PLAYRATE 1 1 0 -1 0 0.0025
+      CHANMODE 0
+      GUID {36E0094F-01C7-4A40-A90C-6D463DB9464D}
+      <SOURCE WAVE
+        FILE "O:\OneDrive\External Drive\Winry\REAPER\synthesizer-mascheen\02-190819_2141.wav"
+      >
     >
   >
   <TRACK {F539EEA4-8977-41C1-9565-D9235C0C0A7E}
@@ -213,19 +235,27 @@
     MIDIOUT -1
     MAINSEND 1 0
     <FXCHAIN
-      WNDRECT 571 254 867 511
+      WNDRECT 2577 380 1213 511
       SHOW 0
-      LASTSEL 0
+      LASTSEL 1
       DOCKED 0
-      BYPASS 0 0 0
+      BYPASS 1 0 0
       <JS analysis/gfxanalyzer ""
         11 -120 0 1 300 0 1000 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
       >
       <JS_PINMAP
-        6AMAABwAAADoAwAAAgAAAAIAAAABAAAAAAAAAAIAAAAAAAAADAAAAOgDAAACAAAAAAAAAA==
+        6AMAABwAAADoAwAAAgAAAAIAAAAAAAAAAAAAAAIAAAAAAAAADAAAAOgDAAACAAAAAAAAAA==
       >
       FLOATPOS 0 0 0 0
       FXID {D7BFB3FC-DD61-4DB8-ABFB-555417F3A395}
+      WAK 0 0
+      BYPASS 0 0 0
+      <JS analysis/gfxscope ""
+        2.472353 -15.2 2.49 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+      >
+      JS_DIMS 986 425
+      FLOATPOS 0 0 0 0
+      FXID {79E60AEA-97C0-49AD-9CBB-0227940E8348}
       WAK 0 0
     >
   >

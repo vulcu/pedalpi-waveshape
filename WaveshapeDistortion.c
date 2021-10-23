@@ -103,6 +103,10 @@ static float_t CubicSoftClipThreshold = 1.0;
 // cubic soft clip harmonic balance, 0 to 1, default is 0.5
 static float_t CubicHarmonicBalance = 0.5;
 
+static float_t absf(float_t x) {
+    return (x >= (float_t)0 ? x : -x);
+}
+
 // cube function
 static float_t cubef(float_t x) {
     return (x * x * x);
@@ -110,7 +114,7 @@ static float_t cubef(float_t x) {
 
 // hard clip of input signal
 static float_t HardClip(float_t sample, float_t thresh) {
-    return 0.5 * (fabsf(sample + thresh) - fabsf(sample - thresh));
+    return 0.5 * (absf(sample + thresh) - absf(sample - thresh));
 };
 
 // cubic soft clip function
@@ -123,17 +127,17 @@ static float_t SoftCubicClip(float_t sample, float_t thresh) {
 // use this to process audio via the SoftCubicClip algorithm
 static float_t SoftCubic(float_t sample) {
     return invsqrt2 * (SoftCubicClip(sample, CubicSoftClipThreshold) +
-        (CubicHarmonicBalance * SoftCubicClip(fabsf(sample), CubicSoftClipThreshold)));
+        (CubicHarmonicBalance * SoftCubicClip(absf(sample), CubicSoftClipThreshold)));
 };
 
 // soft clip function with adjustable knee
 static float_t SKClip(float_t sample, float_t knee) {
-    return sample / (knee * fabsf(sample) + 1);
+    return sample / (knee * absf(sample) + 1);
 };
 
 // use this to process audio via the SKClip algorithm
 static float_t SoftKnee(float_t sample) {
-    return SKClip(sample, SoftClipKnee) + ((SoftClipKnee / 2) * SKClip(fabsf(sample), SoftClipKnee));
+    return SKClip(sample, SoftClipKnee) + ((SoftClipKnee / 2) * SKClip(absf(sample), SoftClipKnee));
 };
 
 // use this to process audio via the leaky integrator algorithm
@@ -254,8 +258,8 @@ int main(int argc, char **argv) {
                 output_sample = LeakyInt(input_sample, previous_output_sample);
                 break;
             case softKnee:
-                output_sample = LeakyInt(input_sample, previous_output_sample) * 2;
-                //output_sample =  SoftKnee(input_sample) * sqrt2;
+                //output_sample = LeakyInt(input_sample, previous_output_sample) * 2;
+                output_sample =  SoftKnee(input_sample) * sqrt2;
                 break;
             case softCubic:
                 output_sample = LeakyInt(input_sample, previous_output_sample) * 0.5;
