@@ -1,4 +1,4 @@
-<REAPER_PROJECT 0.1 "6.37/win64" 1635135028
+<REAPER_PROJECT 0.1 "6.37/win64" 1635142077
   RIPPLE 0
   GROUPOVERRIDE 0 0 0
   AUTOXFADE 1
@@ -110,7 +110,7 @@
     TRACKHEIGHT 182 0 0 0 0 0
     INQ 0 0 0 0.5 100 0 0 100
     NCHAN 2
-    FX 1
+    FX 0
     TRACKID {CF6EF90B-4171-4012-88D3-A9481DEC1834}
     PERF 0
     MIDIOUT -1
@@ -177,7 +177,7 @@
     MIDIOUT -1
     MAINSEND 0 0
     <FXCHAIN
-      WNDRECT 2682 80 716 304
+      WNDRECT 2731 59 716 304
       SHOW 1
       LASTSEL 0
       DOCKED 0
@@ -248,7 +248,7 @@
     MIDIOUT -1
     MAINSEND 1 0
     <FXCHAIN
-      WNDRECT 2577 380 1213 511
+      WNDRECT 2618 367 1213 511
       SHOW 2
       LASTSEL 1
       DOCKED 0
@@ -264,7 +264,7 @@
       WAK 0 0
       BYPASS 0 0 0
       <JS analysis/gfxscope ""
-        5.099642 -17.4 2.34 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+        4.783599 -16.6 2 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
       >
       JS_DIMS 986 425
       FLOATPOS 0 0 0 0
