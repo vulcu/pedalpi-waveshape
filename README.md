@@ -29,11 +29,14 @@ If bugs count as features, then this has a _lot_ of features. The last time it w
 #### Status: This project is in active development ####
 
 ## Installation ##
-Download the BCM2835 library onto a Pedal Pi and install it:
+The BCM2835 library is available here:
+> https://www.airspayce.com/mikem/bcm2835/
+
+Download the BCM2835 library onto a Pedal Pi and install it with:
 ```shell
-wget http://www.airspayce.com/mikem/bcm2835/bcm2835-1.70.tar.gz;
-tar xvfz bcm2835-1.50.tar.gz;
-cd bcm2835-1.50;
+wget https://www.airspayce.com/mikem/bcm2835/bcm2835-1.70.tar.gz;
+tar xvfz bcm2835-1.70.tar.gz;
+cd bcm2835-1.70;
 ./configure;
 make;
 sudo make install
