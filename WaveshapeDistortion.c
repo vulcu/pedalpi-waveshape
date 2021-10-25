@@ -103,6 +103,10 @@ static float_t CubicSoftClipThreshold = 1.0;
 // cubic soft clip harmonic balance, 0 to 1, default is 0.5
 static float_t CubicHarmonicBalance = 0.5;
 
+static float_t absf(float_t x) {
+    return (x >= 0.0 ? x : -x);
+}
+
 // cube function
 static float_t cubef(float_t x) {
     return (x * x * x);
@@ -110,7 +114,7 @@ static float_t cubef(float_t x) {
 
 // hard clip of input signal
 static float_t HardClip(float_t sample, float_t thresh) {
-    return 0.5 * (fabsf(sample + thresh) - fabsf(sample - thresh));
+    return 0.5 * (absf(sample + thresh) - absf(sample - thresh));
 };
 
 // cubic soft clip function
@@ -123,27 +127,26 @@ static float_t SoftCubicClip(float_t sample, float_t thresh) {
 // use this to process audio via the SoftCubicClip algorithm
 static float_t SoftCubic(float_t sample) {
     return invsqrt2 * (SoftCubicClip(sample, CubicSoftClipThreshold) +
-        (CubicHarmonicBalance * SoftCubicClip(fabsf(sample), CubicSoftClipThreshold)));
+        (CubicHarmonicBalance * SoftCubicClip(absf(sample), CubicSoftClipThreshold)));
 };
 
 // soft clip function with adjustable knee
 static float_t SKClip(float_t sample, float_t knee) {
-    return sample / (knee * fabsf(sample) + 1);
+    return sample / (knee * absf(sample) + 1.0);
 };
 
 // use this to process audio via the SKClip algorithm
 static float_t SoftKnee(float_t sample) {
-    return SKClip(sample, SoftClipKnee) + ((SoftClipKnee / 2) * SKClip(fabsf(sample), SoftClipKnee));
+    return SKClip(sample, SoftClipKnee) + ((SoftClipKnee / 2.0) * SKClip(absf(sample), SoftClipKnee));
 };
 
 // use this to process audio via the leaky integrator algorithm
-static float_t LeakyInt(float_t sample, float_t sampleLast) {
-    previous_output_sample = sample;
-    if (sample > sampleLast) {
-       return invsqrt2 * ((1 - TcRise) * sample) + (TcRise * sampleLast);
+static float_t LeakyInt(float_t sample, float_t previous_sample) {
+    if (sample > previous_sample) {
+       return invsqrt2 * (((1.0 - TcRise) * sample) + (TcRise * previous_sample));
     }
       else {
-       return invsqrt2 * ((1 - TcFall) * sample) + (TcFall * sampleLast);
+       return invsqrt2 * (((1.0 - TcFall) * sample) + (TcFall * previous_sample));
     }
 };
 
@@ -201,9 +204,9 @@ int main(int argc, char **argv) {
 
     // Main Loop
     while(1) {
-        // read 12 bits ADC
+        // read 12 bits from ADC, subtract ADC DC offset and normalized to between -1 and 1
         bcm2835_spi_transfernb(mosi, miso, 3);
-        input_sample = (float_t)(((miso[1] & 0x0F) << 8) + miso[2]) - biasOffsetADC;
+        input_sample = (float_t)((((miso[1] & 0x0F) << 8) + miso[2]) - biasOffsetADC)/(biasOffsetADC);
 
         // Read the PUSH buttons every 1563 times (0.025s) to save resources.
         read_timer++;
@@ -247,28 +250,33 @@ int main(int argc, char **argv) {
             debounce_timer -= 1;
         }
 
+        // preprocessing gain and hardclip
+        input_sample = HardClip(sqrt2 * input_sample, 1.0);
+
         //**** WAVESHAPE DISTORTION ***///
         switch (waveshapeType) {
             case leakyIntegrator:
                 //bcm2835_gpio_write(LED, 1);  // for verifying pushbuttons cycle through cases
                 output_sample = LeakyInt(input_sample, previous_output_sample);
+                previous_output_sample = output_sample;
                 break;
             case softKnee:
-                output_sample = LeakyInt(input_sample, previous_output_sample) * 2;
-                //output_sample =  SoftKnee(input_sample) * sqrt2;
+                output_sample =  SoftKnee(input_sample);
                 break;
             case softCubic:
-                output_sample = LeakyInt(input_sample, previous_output_sample) * 0.5;
-                //output_sample = SoftCubic(input_sample) * sqrt2;
+                output_sample = SoftCubic(input_sample);
                 break;
             default:
                 output_sample = input_sample;
         }
 
-        // add previously removed DC bias back into signal
-        output_sample = output_sample + biasOffsetADC;
+        // postprocessing gain and hard clip
+        output_sample = HardClip(invsqrt2 * output_sample, 1.0);
 
-        //generate two 6-bit PWM outputs to simulate 12-bit PWM
+        // revert normalized signal to previous scale and add initial DC bias back into signal
+        output_sample = (output_sample * biasOffsetADC) + biasOffsetADC;
+
+        //generate two 6-bit PWM outputs to simulate a 12-bit PWM output
         bcm2835_pwm_set_data(1, ((uint16_t)output_sample) & 0x003F);
         bcm2835_pwm_set_data(0, ((uint16_t)output_sample) >> 6);
     }
