@@ -205,9 +205,9 @@ int main(int argc, char **argv) {
 
     // Main Loop
     while(1) {
-        // read 12 bits ADC
+        // read 12 bits from ADC, subtract ADC DC offset and normalized to between -1 and 1
         bcm2835_spi_transfernb(mosi, miso, 3);
-        input_sample = (float_t)(((miso[1] & 0x0F) << 8) + miso[2]) - biasOffsetADC;
+        input_sample = (float_t)((((miso[1] & 0x0F) << 8) + miso[2]) - biasOffsetADC)/(biasOffsetADC);
 
         // Read the PUSH buttons every 1563 times (0.025s) to save resources.
         read_timer++;
@@ -258,21 +258,19 @@ int main(int argc, char **argv) {
                 output_sample = LeakyInt(input_sample, previous_output_sample);
                 break;
             case softKnee:
-                //output_sample = LeakyInt(input_sample, previous_output_sample) * 2;
                 output_sample =  SoftKnee(input_sample) * sqrt2;
                 break;
             case softCubic:
-                output_sample = LeakyInt(input_sample, previous_output_sample) * 0.5;
-                //output_sample = SoftCubic(input_sample) * sqrt2;
+                output_sample = SoftCubic(input_sample) * sqrt2;
                 break;
             default:
                 output_sample = input_sample;
         }
 
-        // add previously removed DC bias back into signal
-        output_sample = output_sample + biasOffsetADC;
+        // revert normalized signal to previous values and add DC bias back into signal
+        output_sample = (output_sample * biasOffsetADC) + biasOffsetADC;
 
-        //generate two 6-bit PWM outputs to simulate 12-bit PWM
+        //generate two 6-bit PWM outputs to simulate a 12-bit PWM output
         bcm2835_pwm_set_data(1, ((uint16_t)output_sample) & 0x003F);
         bcm2835_pwm_set_data(0, ((uint16_t)output_sample) >> 6);
     }

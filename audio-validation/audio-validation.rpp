@@ -1,4 +1,4 @@
-<REAPER_PROJECT 0.1 "6.37/win64" 1635031869
+<REAPER_PROJECT 0.1 "6.37/win64" 1635135028
   RIPPLE 0
   GROUPOVERRIDE 0 0 0
   AUTOXFADE 1
@@ -14,7 +14,7 @@
   TIMEMODE 1 5 -1 30 0 0 -1
   VIDEO_CONFIG 0 0 256
   PANMODE 3
-  CURSOR 508
+  CURSOR 456
   ZOOM 3.27605841196314 1226 0
   VZOOMEX 6 0
   USE_REC_CFG 0
@@ -66,7 +66,7 @@
   MASTER_NCH 2 2
   MASTER_VOLUME 1 0 -1 -1 1
   MASTER_FX 1
-  MASTER_SEL 0
+  MASTER_SEL 1
   <MASTERFXLIST
     WNDRECT 24 82 655 408
     SHOW 0
@@ -104,7 +104,7 @@
     BUSCOMP 0 0 0 11 17
     SHOWINMIX 1 0.6667 0.5 1 0.5 0 -1 0
     FREEMODE 0
-    SEL 1
+    SEL 0
     REC 0 -1 0 0 0 0 0
     VU 2
     TRACKHEIGHT 182 0 0 0 0 0
@@ -176,6 +176,19 @@
     AUXRECV 0 0 0.43651583224017 -1 0 0 0 0 0 -1:U 0 -1 ''
     MIDIOUT -1
     MAINSEND 0 0
+    <FXCHAIN
+      WNDRECT 2682 80 716 304
+      SHOW 1
+      LASTSEL 0
+      DOCKED 0
+      BYPASS 0 0 0
+      <JS wavedist/Effects/wavedist ""
+        0 0 0.23 0.9827 0.94 1 0.5 0 0 0.9999 0 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+      >
+      FLOATPOS 0 0 0 0
+      FXID {4B321C6C-3DF9-4953-9F2D-79CE8452E178}
+      WAK 0 0
+    >
   >
   <TRACK {5011F0A6-B4A1-4ABD-B71F-A1BFB9B2279E}
     NAME "Input - Effect"
@@ -236,12 +249,12 @@
     MAINSEND 1 0
     <FXCHAIN
       WNDRECT 2577 380 1213 511
-      SHOW 0
+      SHOW 2
       LASTSEL 1
       DOCKED 0
       BYPASS 1 0 0
       <JS analysis/gfxanalyzer ""
-        11 -120 0 1 300 0 1000 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+        8.54 -120 0 1 300 0 1000 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
       >
       <JS_PINMAP
         6AMAABwAAADoAwAAAgAAAAIAAAAAAAAAAAAAAAIAAAAAAAAADAAAAOgDAAACAAAAAAAAAA==
@@ -251,7 +264,7 @@
       WAK 0 0
       BYPASS 0 0 0
       <JS analysis/gfxscope ""
-        2.472353 -15.2 2.49 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+        5.099642 -17.4 2.34 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
       >
       JS_DIMS 986 425
       FLOATPOS 0 0 0 0
