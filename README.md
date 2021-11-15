@@ -1,5 +1,5 @@
 # PedalPi-WaveShape - Audio Distortion for the [Pedal Pi](https://www.electrosmash.com/pedal-pi) #
-A waveshaping audio distortion written in C for the [Electrosmash Pedal Pi](https://www.electrosmash.com/pedal-pi), and using the Broadcom BCM2835.
+A waveshaping audio distortion written in C for the [Electrosmash Pedal Pi](https://www.electrosmash.com/pedal-pi), and using the Broadcom BCM2835. It utilizes some of the same waveshaper algorithms as [Waveshape-Synth](https://github.com/vulcu/waveshape-synth) and [WaveDist](https://github.com/vulcu/wavedist).
 
 ## Table of Contents ##
 * [General Info](#general-info)
@@ -11,22 +11,24 @@ A waveshaping audio distortion written in C for the [Electrosmash Pedal Pi](http
 ## General Info
 This project makes things sound bad, but in a good way. It relies on a handful of waveshaping algorithms to produce differing kinds of overdrive and distortion. The harmonic ratios and the balance between even and odd harmonics varies by algorithm, with some sounding better on certain musical sources than others. There's no hard-and-fast rules here, so just use your ears.
 
-The `Input Rectification` control can lend itself to some neat octave-doubling effects too!
+The `RectifierThreshold` parameter can lend itself to some neat octave-doubling effects too!
 
 ## Features ##
 If bugs count as features, then this has a _lot_ of features. The last time it was tested, in 2018, it was cleanly passing audio but not much else. 
 
 #### To Do ####
-* Get the basic UI functioning
-* Get audio passing **with** the waveshape processing applied
-  * ~~leaky integrator~~
-  * soft-knee
-  * cubic
+* ~~Get the basic UI functioning~~ _done_
+* ~~Get audio passing **with** the waveshape processing applied~~ _done_
+  * ~~leaky integrator~~ _done_
+  * ~~soft-knee~~ _done_
+  * ~~cubic~~ _done_
+* ~~Create a 'gain boost' on/off control~~ _done_
+* ~~Add a partial input rectification on/off control to create additional harmonics~~ _done_
 * Experiment with adding a `Wet/Dry` control
 * Get this to run on every boot so that you don't have to `ssh` into the Pi on every boot and start it
 * Add oversampling + filtering to reduce aliasing artifacts
 
-#### Status: This project is in active development ####
+#### Status: This project is considered complete and not actively maintained. Additional 'to do' items or new features are unlikely, although some bugs may be fixed. ####
 
 ## Installation ##
 The BCM2835 library is available here:
