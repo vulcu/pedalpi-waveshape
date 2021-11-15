@@ -1,4 +1,4 @@
-<REAPER_PROJECT 0.1 "6.37/win64" 1635142077
+<REAPER_PROJECT 0.1 "6.37/win64" 1636960391
   RIPPLE 0
   GROUPOVERRIDE 0 0 0
   AUTOXFADE 1
@@ -122,7 +122,7 @@
       DOCKED 0
       BYPASS 0 0 0
       <JS synthesis/tonegenerator ""
-        -10.9 -120 997 0 0 0 0 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+        -10.9 -120 220 0 0 0 0 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
       >
       FLOATPOS 0 0 0 0
       FXID {8BF82C05-1B84-4B52-8AC4-AB823AA0FE16}
@@ -248,14 +248,15 @@
     MIDIOUT -1
     MAINSEND 1 0
     <FXCHAIN
-      WNDRECT 2618 367 1213 511
+      WNDRECT 2391 252 1368 758
       SHOW 2
       LASTSEL 1
       DOCKED 0
-      BYPASS 1 0 0
+      BYPASS 0 0 0
       <JS analysis/gfxanalyzer ""
         8.54 -120 0 1 300 0 1000 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
       >
+      JS_DIMS 1079 630
       <JS_PINMAP
         6AMAABwAAADoAwAAAgAAAAIAAAAAAAAAAAAAAAIAAAAAAAAADAAAAOgDAAACAAAAAAAAAA==
       >
@@ -264,11 +265,11 @@
       WAK 0 0
       BYPASS 0 0 0
       <JS analysis/gfxscope ""
-        4.783599 -16.6 2 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+        17.763933 -16 2 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
       >
-      JS_DIMS 986 425
+      JS_DIMS 1141 672
       FLOATPOS 0 0 0 0
-      FXID {79E60AEA-97C0-49AD-9CBB-0227940E8348}
+      FXID {E959EE97-EE8E-4720-91B9-B260D133294C}
       WAK 0 0
     >
   >
