@@ -16,7 +16,12 @@ This project makes things sound bad, but in a good way. It relies on a handful o
 The `RectifierThreshold` parameter can lend itself to some neat octave-doubling effects too!
 
 ## Features ##
-If bugs count as features, then this has a _lot_ of features. The last time it was tested, in 2018, it was cleanly passing audio but not much else. 
+Three waveshaper algorithms from the [Waveshape-Synth](https://github.com/vulcu/waveshape-synth) (cycled via the left/right buttons with the toggle switch in the 'up' position):
+* Leaky Integrator
+* Cubic Soft-Clip
+* Soft-Knee Clip
+
+Additionally, there is a selectable gain boost on the order of 10 dB (toggle down + left button), and a partial rectifier algorithm which can be turned on/off to add some additional harmonics (toggle down + right button).
 
 ![Electrosmash-PedalPi-Top-View-text](/images/Electrosmash_PedalPi_Top_View_text.jpeg)
 
