@@ -1,6 +1,8 @@
 # PedalPi-WaveShape - Audio Distortion for the [Pedal Pi](https://www.electrosmash.com/pedal-pi) #
 A waveshaping audio distortion written in C for the [Electrosmash Pedal Pi](https://www.electrosmash.com/pedal-pi), and using the Broadcom BCM2835. It utilizes some of the same waveshaper algorithms as [Waveshape-Synth](https://github.com/vulcu/waveshape-synth) and [WaveDist](https://github.com/vulcu/wavedist).
 
+![Electrosmash-PedalPi-Front-Angle](/images/Electrosmash_PedalPi_Front_Angle.jpeg)
+
 ## Table of Contents ##
 * [General Info](#general-info)
 * [Features](#features)
@@ -15,6 +17,8 @@ The `RectifierThreshold` parameter can lend itself to some neat octave-doubling 
 
 ## Features ##
 If bugs count as features, then this has a _lot_ of features. The last time it was tested, in 2018, it was cleanly passing audio but not much else. 
+
+![Electrosmash-PedalPi-Top-View-text](/images/Electrosmash_PedalPi_Top_View_text.jpeg)
 
 #### To Do ####
 * ~~Get the basic UI functioning~~ _done_
