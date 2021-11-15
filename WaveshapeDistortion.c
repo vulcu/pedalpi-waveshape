@@ -144,7 +144,7 @@ static float_t SoftCubicClip(float_t sample, float_t thresh) {
 
 // use this to process audio via the SoftCubicClip algorithm
 static float_t SoftCubic(float_t sample) {
-    return invsqrt2 * (SoftCubicClip(sample, CubicSoftClipThreshold) +
+    return (invsqrt2 / 3) * (SoftCubicClip(sample, CubicSoftClipThreshold) +
         (CubicHarmonicBalance * SoftCubicClip(absf(sample), CubicSoftClipThreshold)));
 };
 
@@ -155,7 +155,7 @@ static float_t SKClip(float_t sample, float_t knee) {
 
 // use this to process audio via the SKClip algorithm
 static float_t SoftKnee(float_t sample) {
-    return SKClip(sample, SoftClipKnee) + ((SoftClipKnee / 2.0) * SKClip(absf(sample), SoftClipKnee));
+    return 0.5 * (SKClip(sample, SoftClipKnee) + ((SoftClipKnee / 2.0) * SKClip(absf(sample), SoftClipKnee)));
 };
 
 // use this to process audio via the leaky integrator algorithm
