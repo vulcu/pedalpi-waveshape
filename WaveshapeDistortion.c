@@ -103,6 +103,13 @@ static float_t CubicSoftClipThreshold = 1.0;
 // cubic soft clip harmonic balance, 0 to 1, default is 0.5
 static float_t CubicHarmonicBalance = 0.5;
 
+// rectification state and threshold, 0 to 1, default is 0.35
+static uint8_t isRectifierEnabled = 0;
+static float_t RectifierThreshold = 0.35;
+
+// additional gain state and value
+static uint8_t isAddionalGainEnabled = 0;
+static float_t AdditionalGainMultiplier = 2.0;
 static float_t absf(float_t x) {
     return (x >= 0.0 ? x : -x);
 }
@@ -220,8 +227,8 @@ int main(int argc, char **argv) {
             //light the effect when the footswitch is activated.
             bcm2835_gpio_write(LED,!switch_push_foot);
 
-            //update booster_value when the PUSH1 or 2 buttons are pushed and toggle switch is up
-            if (switch_toggle_0 == 0)
+            //update waveshapeType when the PUSH1 or 2 buttons are pushed and toggle switch is up
+            if (switch_toggle_0 == 0) {
                 if (switch_push_left == 0) {
                     //reset delay for button debouncing
                     debounce_timer = DEBOUNCE_TIMER_DELAY_CYCLES;
@@ -242,8 +249,29 @@ int main(int argc, char **argv) {
                         waveshapeType = (enum waveshapers) 0;
                     }
                 }
+            }
+            // change waveshape parameter instead if toggle switch is down
             else {
-                // change waveshape parameter instead if toggle switch is down
+                if (switch_push_left == 0) {
+                    debounce_timer = DEBOUNCE_TIMER_DELAY_CYCLES;
+                    //enable additional gain multiplier
+                    if (isAddionalGainEnabled != 0){
+                        isAddionalGainEnabled = 0;
+                    }
+                    else {
+                        isAddionalGainEnabled = 1;
+                    }
+                }
+                else if (switch_push_right == 0) {
+                    debounce_timer = DEBOUNCE_TIMER_DELAY_CYCLES;
+                    //enable partial signal rectification
+                    if (isRectifierEnabled != 0){
+                        isRectifierEnabled = 0;
+                    }
+                    else {
+                        isRectifierEnabled = 1;
+                    }
+                }
             }
         }
         else if (debounce_timer > 0) {
