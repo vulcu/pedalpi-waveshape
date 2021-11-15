@@ -284,7 +284,12 @@ int main(int argc, char **argv) {
         }
 
         // preprocessing gain and hardclip
-        input_sample = HardClip(sqrt2 * input_sample, 1.0);
+        if (isAddionalGainEnabled) {
+            input_sample = HardClip(input_sample * AdditionalGainMultiplier, 0.95);
+        }
+        else {
+            input_sample = HardClip(input_sample, 0.95);
+        }
 
         if (isRectifierEnabled) {
             input_sample = Rectify(input_sample);
@@ -308,7 +313,12 @@ int main(int argc, char **argv) {
         }
 
         // postprocessing gain and hard clip
-        output_sample = HardClip(invsqrt2 * output_sample, 1.0);
+        if (isAddionalGainEnabled) {
+            output_sample = HardClip(output_sample * sqrt2 * AdditionalGainMultiplier, 0.95);
+        }
+        else {
+            output_sample = HardClip(output_sample * sqrt2, 0.95);
+        }
 
         // revert normalized signal to previous scale and add initial DC bias back into signal
         output_sample = (output_sample * biasOffsetADC) + biasOffsetADC;
