@@ -119,6 +119,11 @@ static float_t cubef(float_t x) {
     return (x * x * x);
 }
 
+// use this to process audio via the rectification algorithm
+static float_t Rectify(float_t sample) {
+    return ((1 - RectifierThreshold) * sample) + (absf(sample) * RectifierThreshold);
+};
+
 // hard clip of input signal
 static float_t HardClip(float_t sample, float_t thresh) {
     return 0.5 * (absf(sample + thresh) - absf(sample - thresh));
@@ -280,6 +285,10 @@ int main(int argc, char **argv) {
 
         // preprocessing gain and hardclip
         input_sample = HardClip(sqrt2 * input_sample, 1.0);
+
+        if (isRectifierEnabled) {
+            input_sample = Rectify(input_sample);
+        }
 
         //**** WAVESHAPE DISTORTION ***///
         switch (waveshapeType) {
