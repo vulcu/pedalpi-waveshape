@@ -62,15 +62,13 @@ then run:
 ## Algorithms ##
 This project uses the following algorithms for waveshaping and signal limiting:
 ```
- 1) soft clip alg:        y[n] = (1.5*x[n]) - (0.5*x[n]^3);
- 2) leaky integrator alg: y[n] = ((1 - A) * x[n]) + (A * y[n - 1]);
- 3) soft knee clip alg:   y[n] = x[n] / (K * abs(x[n]) + 1);
- 4) cubic soft clip alg:  y[n] = (1.5 * threshold * HardClip(x[n])) -
-                                ((0.5 * HardClip(x[n])^3) / threshold);
- 5) warp alg: y[n] = (((x[n] * 1.5) - (0.5 * x[n]^3)) * (((2 * K) / (1 - K))
-                    + 1)) / ((abs((x[n] * 1.5) - (0.5 * x[n]^3)) 
-                    * ((2 * K) / (1 - K))) + 1);
- 6) rectify alg: y[n] = ((1 - R) * softclip(x[n])) + (|softclip(x[n])| * R);
+ 1) hard clip alg:        y[n] = 0.5 * (abs(x + Theshold) - abs(x - Threshold))
+ 2) soft clip alg:        y[n] = (1.5*x[n]) - (0.5*x[n]^3);
+ 3) leaky integrator alg: y[n] = ((1 - A) * x[n]) + (A * y[n - 1]);
+ 4) soft knee clip alg:   y[n] = x[n] / (K * abs(x[n]) + 1);
+ 5) cubic soft clip alg:  y[n] = (1.5 * threshold * HardClip(x[n]))
+                                  - ((0.5 * HardClip(x[n])^3) / threshold);
+ 6) partial rectify alg:  y[n] = ((1 - R) * softclip(x[n])) + (|softclip(x[n])| * R);
 ```
 
 ## References: ##
