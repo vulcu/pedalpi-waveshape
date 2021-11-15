@@ -110,6 +110,12 @@ static float_t RectifierThreshold = 0.35;
 // additional gain state and value
 static uint8_t isAddionalGainEnabled = 0;
 static float_t AdditionalGainMultiplier = 2.0;
+
+// cutoff value for DC blocking algorithm
+static float_t dcBlockCutoff = 0.9999;
+static float_t itm_in = 0;
+static float_t otm_in = 0;
+
 static float_t absf(float_t x) {
     return (x >= 0.0 ? x : -x);
 }
@@ -319,6 +325,11 @@ int main(int argc, char **argv) {
         else {
             output_sample = HardClip(output_sample * sqrt2, 0.95);
         }
+
+        // remove any DC offset from asymmetric signal processing
+        otm_in = otm_in * dcBlockCutoff + output_sample - itm_in;
+        itm_in = output_sample;
+        output_sample = otm_in;
 
         // revert normalized signal to previous scale and add initial DC bias back into signal
         output_sample = (output_sample * biasOffsetADC) + biasOffsetADC;
