@@ -320,10 +320,10 @@ int main(int argc, char **argv) {
 
         // postprocessing gain and hard clip
         if (isAddionalGainEnabled) {
-            output_sample = HardClip(output_sample * sqrt2 * AdditionalGainMultiplier, 0.95);
+            output_sample = HardClip(output_sample * 2 * AdditionalGainMultiplier, 0.95);
         }
         else {
-            output_sample = HardClip(output_sample * sqrt2, 0.95);
+            output_sample = HardClip(output_sample * 2, 0.95);
         }
 
         // remove any DC offset from asymmetric signal processing
